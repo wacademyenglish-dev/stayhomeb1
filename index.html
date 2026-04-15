@@ -1,0 +1,1762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wolf Labs | The Homebody Paradox</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;600&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Tailwind Config for Premium Theme -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-green': '#1DB954',
+                        'brand-hover': '#1ed760',
+                        'brand-dark': '#15873d',
+                        'bg-elevated': 'rgba(24, 24, 24, 0.65)',
+                        'bg-highlight': 'rgba(40, 40, 40, 0.8)',
+                        'text-base': '#FFFFFF',
+                        'text-muted': '#D1D5DB',
+                        'incorrect': '#E22134'
+                    },
+                    fontFamily: {
+                        'montserrat': ['Montserrat', 'sans-serif'],
+                        'inter': ['Inter', 'sans-serif'],
+                        'fira': ['Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --glass-bg: rgba(15, 15, 15, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glow-green: rgba(29, 185, 84, 0.5);
+        }
+
+        body {
+            background-color: #050505;
+            color: #FFFFFF;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Thematic Background with Overlay */
+        .theme-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: url('https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=1920&auto=format&fit=crop') no-repeat center center;
+            background-size: cover;
+            z-index: -2;
+        }
+        .theme-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(135deg, rgba(10,10,10,0.9) 0%, rgba(18,18,18,0.7) 100%);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: -1;
+        }
+
+        /* Ambient Glowing Orbs */
+        .ambient-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: 0;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        .orb-1 { top: -10%; left: -5%; width: 40vw; height: 40vw; background: rgba(29, 185, 84, 0.4); }
+        .orb-2 { bottom: 10%; right: -5%; width: 30vw; height: 30vw; background: rgba(255, 255, 255, 0.1); }
+
+        /* UI Containers */
+        .top-nav {
+            position: fixed; top: 0; left: 0; right: 0; height: 75px;
+            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border); z-index: 1000;
+            display: flex; justify-content: space-between; align-items: center; padding: 0 2rem;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+        }
+
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0; height: 85px;
+            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border); z-index: 1000;
+            display: flex; justify-content: space-between; align-items: center; padding: 0 2rem;
+            box-shadow: 0 -4px 30px rgba(0,0,0,0.5);
+        }
+
+        /* Zero Cut-off Core Container */
+        .main-container {
+            position: fixed; top: 75px; bottom: 85px; left: 0; right: 0;
+            overflow-y: auto; overflow-x: hidden;
+            scrollbar-width: none; scroll-behavior: smooth;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10;
+        }
+        .main-container::-webkit-scrollbar { display: none; }
+        .main-container.sidebar-open { transform: scale(0.95) translateX(2vw); }
+
+        /* Slide Formatting */
+        .slide {
+            display: none; flex-direction: column; align-items: center;
+            min-height: 100%; padding: 40px 5%; width: 100%; max-width: 1200px; margin: 0 auto;
+            animation: slideIn 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+            opacity: 0;
+        }
+        .slide.active { display: flex; }
+        .slide::before, .slide::after { content: ''; flex: 1 0 auto; }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Glass Panel Reusable */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+        .glass-panel:hover {
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        /* Sidebars */
+        .sidebar {
+            position: fixed; top: 75px; bottom: 85px; width: 340px;
+            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border); z-index: 2000;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            padding: 1.5rem; display: flex; flex-direction: column;
+        }
+        #hud-sidebar { left: 0; transform: translateX(-100%); border-right: 1px solid var(--glass-border); border-left: none; }
+        #hud-sidebar.open { transform: translateX(0); }
+        #wb-sidebar { right: 0; transform: translateX(100%); border-left: 1px solid var(--glass-border); border-right: none; }
+        #wb-sidebar.open { transform: translateX(0); }
+        #dict-sidebar { right: 0; transform: translateX(100%); border-left: 1px solid var(--glass-border); border-right: none; }
+        #dict-sidebar.open { transform: translateX(0); }
+
+        /* Buttons & Interactions */
+        .btn-primary {
+            background: theme('colors.brand-green'); color: #FFFFFF; font-weight: 800;
+            padding: 0.875rem 2rem; border-radius: 9999px; transition: all 0.3s;
+            text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Montserrat', sans-serif;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 4px 15px rgba(29, 185, 84, 0.3);
+        }
+        .btn-primary:hover { 
+            background: theme('colors.brand-hover'); transform: scale(1.05) translateY(-2px); 
+            box-shadow: 0 8px 25px rgba(29, 185, 84, 0.6); 
+        }
+        
+        .btn-glass {
+            background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+            padding: 0.875rem 1.5rem; border-radius: 1rem; transition: all 0.3s; color: #FFFFFF;
+            font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .btn-glass:hover { 
+            background: rgba(255,255,255,0.12); transform: translateY(-3px); 
+            border-color: theme('colors.brand-green'); 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4), 0 0 15px rgba(29, 185, 84, 0.2);
+        }
+        .btn-glass.selected {
+            background: theme('colors.brand-green');
+            border-color: theme('colors.brand-green');
+            box-shadow: 0 0 20px var(--glow-green);
+        }
+
+        .btn-ghost {
+            color: var(--text-muted); transition: all 0.3s; padding: 0.5rem; border-radius: 50%;
+        }
+        .btn-ghost:hover { color: #FFFFFF; background: rgba(255,255,255,0.1); }
+
+        /* Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+        .shake { animation: shake 0.4s ease; border-color: theme('colors.incorrect') !important; background: rgba(226,33,52,0.2) !important;}
+        
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-80px) scale(1.2); opacity: 0; }
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            80% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .pop-anim { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        /* 3D Cards */
+        .flip-card { background-color: transparent; width: 100%; height: 260px; perspective: 1000px; cursor: pointer; }
+        .flip-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; }
+        .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+        .flip-card-front, .flip-card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .flip-card-front { background: var(--glass-bg); border: 1px solid var(--glass-border); }
+        .flip-card-back { background: theme('colors.brand-dark'); border: 2px solid theme('colors.brand-green'); transform: rotateY(180deg); }
+
+        /* Gamified Wordwall Elements */
+        .mystery-box {
+            background: linear-gradient(145deg, rgba(30,30,30,0.9), rgba(15,15,15,0.9));
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 1.5rem; cursor: pointer; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 180px; box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            position: relative; overflow: hidden;
+        }
+        .mystery-box::before {
+            content: '?'; position: absolute; font-size: 6rem; font-family: 'Montserrat', sans-serif;
+            font-weight: 900; color: rgba(255,255,255,0.05); z-index: 0;
+        }
+        .mystery-box:hover { transform: translateY(-10px) scale(1.05); border-color: theme('colors.brand-green'); box-shadow: 0 20px 40px rgba(29,185,84,0.3); }
+        .mystery-box.opened {
+            background: theme('colors.brand-dark'); border-color: theme('colors.brand-green');
+            animation: popIn 0.5s ease; pointer-events: none;
+        }
+        .mystery-box.opened::before { display: none; }
+
+        /* Sorter Single Item UI */
+        .sorter-item {
+            font-size: 2.5rem; font-weight: 800; padding: 2rem 4rem;
+            background: rgba(255,255,255,0.1); border: 2px solid theme('colors.brand-green');
+            border-radius: 2rem; display: inline-block; box-shadow: 0 0 30px rgba(29,185,84,0.3);
+            transition: all 0.3s;
+        }
+        .sorter-bucket {
+            border: 3px dashed rgba(255,255,255,0.2); border-radius: 1.5rem;
+            padding: 2rem; transition: all 0.3s; cursor: pointer;
+            background: rgba(0,0,0,0.3);
+        }
+        .sorter-bucket:hover { border-color: theme('colors.brand-green'); background: rgba(29,185,84,0.1); transform: scale(1.02); }
+
+        /* Sentence Assembly */
+        .drop-zone { 
+            min-height: 120px; border: 3px dashed rgba(255,255,255,0.3); border-radius: 1.5rem; 
+            display: flex; flex-wrap: wrap; gap: 0.75rem; padding: 1.5rem; transition: all 0.3s; 
+            background: rgba(0,0,0,0.4); justify-content: center; align-items: center;
+        }
+        .drop-zone.success { border-color: theme('colors.brand-green'); background: rgba(29,185,84,0.15); box-shadow: inset 0 0 20px rgba(29,185,84,0.3); }
+        
+        .error-block { 
+            display: inline-block; padding: 0.5rem 1rem; margin: 0.25rem; 
+            background: rgba(255,255,255,0.08); border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .error-block:hover { background: rgba(255,255,255,0.15); transform: translateY(-3px); border-color: theme('colors.brand-green'); }
+        .error-block.fixed { background: theme('colors.brand-dark'); border-color: theme('colors.brand-green'); font-weight: bold; pointer-events: none; box-shadow: 0 0 15px var(--glow-green); }
+
+        /* Progress Bar */
+        .progress-container { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin-bottom: 2rem; }
+        .progress-fill { height: 100%; background: theme('colors.brand-green'); transition: width 0.4s ease; box-shadow: 0 0 10px rgba(29,185,84,0.8); }
+
+        /* Quiz Transitions */
+        .quiz-slide-content { transition: opacity 0.3s ease, transform 0.3s ease; }
+        .quiz-slide-content.fade-out { opacity: 0; transform: translateX(-20px); }
+        .quiz-slide-content.fade-in { opacity: 0; transform: translateX(20px); animation: fadeInSlide 0.4s forwards; }
+        
+        @keyframes fadeInSlide {
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Custom Slider UI */
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 35px; width: 35px; border-radius: 50%;
+            background: theme('colors.brand-green'); cursor: pointer; margin-top: -14px;
+            box-shadow: 0 0 20px rgba(29, 185, 84, 0.8); transition: transform 0.2s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 8px; cursor: pointer; background: rgba(255,255,255,0.1);
+            border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+        }
+        select { appearance: none; background: rgba(0,0,0,0.5); border: 2px solid var(--glass-border); color: white; padding: 0.5rem 1.5rem; border-radius: 0.75rem; outline: none; font-family: 'Fira Code', monospace; cursor: pointer; transition: all 0.3s; }
+        select:focus, select:hover { border-color: theme('colors.brand-green'); background: rgba(29,185,84,0.1); }
+    </style>
+</head>
+<body>
+
+    <!-- Thematic Premium Background -->
+    <div class="theme-bg"></div>
+    <div class="theme-overlay"></div>
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
+
+    <!-- TOP NAVIGATION -->
+    <nav class="top-nav">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-brand-green flex items-center justify-center text-white font-black text-2xl shadow-[0_0_15px_rgba(29,185,84,0.6)]"><i class="fa-solid fa-wolf-pack-battles drop-shadow-md"></i></div>
+            <h1 class="font-montserrat text-2xl font-black tracking-widest uppercase hidden md:block drop-shadow-md">Wolf Labs <span class="text-text-muted text-sm font-inter tracking-normal font-normal">| Masterclass</span></h1>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="text-white font-fira text-xl font-bold bg-glass-bg px-4 py-2 rounded-full border border-glass-border shadow-lg">
+                <i class="fa-solid fa-bolt text-brand-green mr-2 drop-shadow-[0_0_8px_rgba(29,185,84,0.8)]"></i>
+                <span id="xp-display">0</span> XP
+            </div>
+        </div>
+    </nav>
+
+    <!-- SIDEBARS -->
+    <!-- Teacher HUD -->
+    <div id="hud-sidebar" class="sidebar">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="font-montserrat text-brand-green tracking-widest font-black uppercase text-xl">Command Center</h2>
+            <button onclick="toggleSidebar('hud-sidebar')" class="btn-ghost"><i class="fa-solid fa-times text-xl"></i></button>
+        </div>
+        
+        <div class="glass-panel p-6 mb-6 text-center border-t-4 border-t-brand-green">
+            <div class="text-sm text-text-muted uppercase tracking-widest mb-3 font-bold">Stage Timer</div>
+            <div id="timer-display" class="font-fira text-5xl font-light text-white mb-6 drop-shadow-lg">01:00</div>
+            <div class="flex justify-center gap-3">
+                <button onclick="startTimer()" class="btn-glass p-3 rounded-full"><i class="fa-solid fa-play"></i></button>
+                <button onclick="pauseTimer()" class="btn-glass p-3 rounded-full"><i class="fa-solid fa-pause"></i></button>
+                <button onclick="resetTimer()" class="btn-glass p-3 rounded-full"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+        </div>
+
+        <div class="glass-panel p-6 mb-6">
+            <div class="text-sm text-text-muted uppercase tracking-widest mb-4 font-bold text-center">Manual XP Injection</div>
+            <div class="flex justify-center gap-4">
+                <button onclick="addXP(50)" class="btn-glass flex-1 flex items-center justify-center gap-2 hover:bg-brand-dark hover:border-brand-green"><i class="fa-solid fa-plus text-brand-green"></i> 50</button>
+                <button onclick="addXP(-50)" class="btn-glass flex-1 flex items-center justify-center gap-2 hover:bg-incorrect hover:border-incorrect hover:text-white"><i class="fa-solid fa-minus text-incorrect group-hover:text-white"></i> 50</button>
+            </div>
+        </div>
+
+        <button onclick="triggerPraise()" class="btn-primary w-full mt-auto text-lg py-4 shadow-[0_0_20px_rgba(29,185,84,0.4)]"><i class="fa-solid fa-bullhorn mr-2"></i> Send Praise</button>
+    </div>
+
+    <!-- Whiteboard -->
+    <div id="wb-sidebar" class="sidebar">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="font-montserrat text-white tracking-widest font-black uppercase text-xl"><i class="fa-solid fa-pen-nib mr-2 text-brand-green"></i> Live Notes</h2>
+            <button onclick="toggleSidebar('wb-sidebar')" class="btn-ghost"><i class="fa-solid fa-times text-xl"></i></button>
+        </div>
+        <textarea class="w-full h-full bg-black/40 border border-glass-border rounded-2xl p-5 text-white focus:outline-none focus:border-brand-green resize-none font-inter text-lg shadow-inner" placeholder="Type your live feedback and notes here..."></textarea>
+    </div>
+
+    <!-- Smart Dict -->
+    <div id="dict-sidebar" class="sidebar">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="font-montserrat text-white tracking-widest font-black uppercase text-xl"><i class="fa-solid fa-book-journal-whills mr-2 text-brand-green"></i> Smart Dict</h2>
+            <button onclick="toggleSidebar('dict-sidebar')" class="btn-ghost"><i class="fa-solid fa-times text-xl"></i></button>
+        </div>
+        <div id="dict-content" class="flex-1 overflow-y-auto pr-2">
+            <div class="text-center text-text-muted mt-10 font-inter">
+                <i class="fa-solid fa-magnifying-glass text-4xl mb-4 opacity-50"></i>
+                <p>Select a vocabulary word during the lesson to decrypt its meaning.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <main id="main-container" class="main-container">
+
+        <!-- Slide 1: Teacher's Guide -->
+        <section id="slide-1" class="slide active">
+            <div class="glass-panel p-12 max-w-3xl w-full">
+                <div class="flex items-center gap-4 mb-8 border-b border-glass-border pb-6">
+                    <i class="fa-solid fa-user-tie text-5xl text-brand-green drop-shadow-[0_0_10px_rgba(29,185,84,0.5)]"></i>
+                    <h1 class="font-montserrat text-4xl font-black uppercase tracking-wide">Teacher's Guide</h1>
+                </div>
+                <div class="space-y-6 text-lg text-text-muted font-inter">
+                    <p><strong class="text-white">Topic:</strong> The Psychology of Staying Home (Introverts vs. Extroverts).</p>
+                    <p><strong class="text-white">Level:</strong> B1/B2 Intermediate</p>
+                    <p><strong class="text-white">Grammar Focus:</strong> Gerunds vs. Infinitives (Verbs of Preference & Routine).</p>
+                    <div class="bg-black/50 p-6 rounded-2xl border border-glass-border mt-8 shadow-inner">
+                        <h3 class="text-brand-green font-bold mb-3 font-fira text-xl flex items-center"><i class="fa-solid fa-terminal mr-3"></i>Vibe Check</h3>
+                        <p class="text-base leading-relaxed">This is a Premium Dark themed lesson. Ask deep psychological questions and let the student reflect on their habits. The grand conversational climax happens on <strong>Slide 20 (The Spectrum Quiz)</strong>, where each of the 10 questions opens a different <em>Speaking Hub</em>. Use the <span class="text-white font-bold">Command Center (HUD)</span> to award XP manually and motivate your agent!</p>
+                    </div>
+                </div>
+                <button class="btn-primary w-full mt-10 text-xl py-4" onclick="nextSlide()">Initialize Session</button>
+            </div>
+        </section>
+
+        <!-- Slide 2: Cover -->
+        <section id="slide-2" class="slide">
+            <div class="text-center mb-16 mt-10">
+                <p class="text-brand-green font-fira tracking-[0.3em] uppercase text-sm mb-4 font-bold drop-shadow-md">Module 01 // B1 Level</p>
+                <h1 class="font-montserrat text-6xl md:text-8xl font-black uppercase tracking-tighter mb-6 drop-shadow-2xl">The Homebody<br><span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-green to-teal-200">Paradox</span></h1>
+                <p class="text-2xl text-text-muted font-light max-w-2xl mx-auto">Decoding the psychology of solitude and social batteries.</p>
+            </div>
+
+            <div class="glass-panel p-10 w-full max-w-xl text-center">
+                <label class="block font-fira text-text-muted uppercase tracking-widest mb-4">Enter Agent Credentials</label>
+                <input type="text" id="player-name" placeholder="Type name here..." class="w-full bg-black/40 border-2 border-glass-border rounded-xl py-5 px-6 text-white text-center text-2xl focus:outline-none focus:border-brand-green transition shadow-inner mb-8 font-bold">
+                <button onclick="startGame()" class="btn-primary w-full text-xl py-4 flex items-center justify-center gap-3">Start Journey <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+        </section>
+
+        <!-- Slide 3: Vibe Check -->
+        <section id="slide-3" class="slide">
+            <h2 class="font-montserrat text-5xl font-black mb-12 uppercase drop-shadow-lg text-center">Vibe Check</h2>
+            <div class="glass-panel p-12 max-w-3xl w-full text-center mb-8 border-t-4 border-t-brand-green">
+                <p class="text-3xl mb-10 font-light leading-relaxed">It's 7:00 PM on a Friday after a long week. What is your immediate instinct?</p>
+                <div class="flex flex-col gap-5">
+                    <button class="btn-glass text-left text-xl py-6 px-8 hover:bg-brand-dark flex items-center justify-between group" onclick="checkAnswer(true, this, 100); revealHub(this)">
+                        <span>A) Cancel plans, order pizza, and watch a movie.</span>
+                        <i class="fa-solid fa-couch opacity-0 group-hover:opacity-100 transition transform group-hover:scale-125 text-brand-green"></i>
+                    </button>
+                    <button class="btn-glass text-left text-xl py-6 px-8 hover:bg-brand-dark flex items-center justify-between group" onclick="checkAnswer(true, this, 100); revealHub(this)">
+                        <span>B) Text friends and find a crowded place to go.</span>
+                        <i class="fa-solid fa-martini-glass-citrus opacity-0 group-hover:opacity-100 transition transform group-hover:scale-125 text-brand-green"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="speaking-hub hidden w-full max-w-3xl p-8 glass-panel border-l-8 border-l-brand-green bg-black/60">
+                <h3 class="text-brand-green font-bold mb-3 text-xl uppercase tracking-widest"><i class="fa-solid fa-microphone-lines mr-2"></i> Speaking Hub</h3>
+                <p class="text-text-muted mb-6 text-lg">Teacher: Ask why they chose this option. Is it a recent change in their life or have they always been this way?</p>
+                <button class="btn-glass w-full border-brand-green text-brand-green hover:bg-brand-green hover:text-white" onclick="this.nextElementSibling.classList.toggle('hidden')">Reveal Sentence Starter</button>
+                <div class="hidden mt-6 p-6 bg-brand-green text-white rounded-xl text-center font-bold text-2xl shadow-[0_0_20px_rgba(29,185,84,0.4)]">
+                    "Honestly, lately I prefer..."
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 4: Topic Cards -->
+        <section id="slide-4" class="slide">
+            <div class="text-center mb-12">
+                <h2 class="font-montserrat text-5xl font-black mb-4 uppercase drop-shadow-lg">Deep Dive</h2>
+                <p class="text-xl text-text-muted font-light">Click a card to reveal the psychological question.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-6xl mb-10">
+                <div class="flip-card" onclick="this.classList.toggle('flipped'); checkAnswer(true, this, 50); revealHub(this)">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><i class="fa-solid fa-battery-half text-6xl mb-6 text-brand-green drop-shadow-[0_0_10px_rgba(29,185,84,0.5)]"></i><h3 class="font-bold text-2xl font-montserrat uppercase tracking-wider">The Battery</h3></div>
+                        <div class="flip-card-back p-8"><p class="text-xl font-bold leading-relaxed">Do you feel drained or energized after a large social event?</p></div>
+                    </div>
+                </div>
+                <div class="flip-card" onclick="this.classList.toggle('flipped'); checkAnswer(true, this, 50); revealHub(this)">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><i class="fa-solid fa-plug text-6xl mb-6 text-brand-green drop-shadow-[0_0_10px_rgba(29,185,84,0.5)]"></i><h3 class="font-bold text-2xl font-montserrat uppercase tracking-wider">The Charger</h3></div>
+                        <div class="flip-card-back p-8"><p class="text-xl font-bold leading-relaxed">What is your favorite specific way to "recharge" your energy at home?</p></div>
+                    </div>
+                </div>
+                <div class="flip-card" onclick="this.classList.toggle('flipped'); checkAnswer(true, this, 50); revealHub(this)">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front"><i class="fa-solid fa-earth-americas text-6xl mb-6 text-brand-green drop-shadow-[0_0_10px_rgba(29,185,84,0.5)]"></i><h3 class="font-bold text-2xl font-montserrat uppercase tracking-wider">The Society</h3></div>
+                        <div class="flip-card-back p-8"><p class="text-xl font-bold leading-relaxed">Is modern society too obsessed with the idea of "going out and partying"?</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="speaking-hub hidden w-full max-w-4xl p-8 glass-panel border-l-8 border-l-brand-green bg-black/60">
+                <h3 class="text-brand-green font-bold mb-3 text-xl uppercase tracking-widest"><i class="fa-solid fa-lightbulb mr-2"></i> Hint Mode</h3>
+                <button class="btn-glass w-full border-brand-green text-brand-green hover:bg-brand-green hover:text-white" onclick="this.nextElementSibling.classList.toggle('hidden')">Show Vocabulary Hint</button>
+                <div class="hidden mt-6 p-6 bg-black/50 border border-glass-border rounded-xl text-center text-xl">
+                    Try to use words like: <span class="text-brand-green font-fira font-bold mx-2">exhausting</span>, <span class="text-brand-green font-fira font-bold mx-2">rewarding</span>, <span class="text-brand-green font-fira font-bold mx-2">solitude</span>.
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 5: The Energy Scale -->
+        <section id="slide-5" class="slide">
+            <div class="text-center mb-12">
+                <h2 class="font-montserrat text-5xl font-black mb-4 uppercase drop-shadow-lg">The Energy Scale</h2>
+                <p class="text-xl text-text-muted font-light">Calibrate your current psychological state.</p>
+            </div>
+            
+            <div class="glass-panel p-12 max-w-3xl w-full text-center mb-8 border-t-4 border-t-brand-green shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+                <p class="text-3xl mb-12 font-light leading-relaxed">Where do you currently fall on the social energy spectrum <strong class="text-brand-green">today</strong>?</p>
+                <div class="mb-12">
+                    <input type="range" id="energy-slider" min="1" max="10" value="5" oninput="document.getElementById('energy-value').textContent = this.value">
+                    <div class="flex justify-between mt-6 text-text-muted font-fira font-bold uppercase tracking-widest text-sm">
+                        <span>1 (Complete Hermit)</span>
+                        <span id="energy-value" class="text-brand-green text-4xl drop-shadow-[0_0_10px_rgba(29,185,84,0.8)]">5</span>
+                        <span>10 (Party Animal)</span>
+                    </div>
+                </div>
+                <button class="btn-primary px-12 py-4 text-xl" onclick="addXP(100, this); revealHub(this)">Lock In Configuration</button>
+            </div>
+            
+            <div class="speaking-hub hidden w-full max-w-3xl p-8 glass-panel border-l-8 border-l-brand-green bg-black/60">
+                <h3 class="text-brand-green font-bold mb-3 text-xl uppercase tracking-widest"><i class="fa-solid fa-microphone-lines mr-2"></i> Speaking Hub</h3>
+                <p class="text-white text-lg">Why did you pick this number? Does this number completely change depending on the day of the week?</p>
+            </div>
+        </section>
+
+        <!-- Slide 6: Mystery Boxes -->
+        <section id="slide-6" class="slide">
+            <div class="text-center mb-12">
+                <h2 class="font-montserrat text-5xl font-black mb-4 uppercase drop-shadow-lg">Mystery Boxes</h2>
+                <p class="text-xl text-text-muted font-light">Click a box to unlock a concept in your Smart Dict.</p>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 w-full max-w-5xl">
+                <div class="mystery-box" onclick="openBox(this, 'Solitude')">
+                    <span class="z-10 text-2xl font-bold font-fira tracking-widest text-white opacity-0 transition-opacity duration-500">SOLITUDE</span>
+                </div>
+                <div class="mystery-box" onclick="openBox(this, 'Introvert')">
+                    <span class="z-10 text-2xl font-bold font-fira tracking-widest text-white opacity-0 transition-opacity duration-500">INTROVERT</span>
+                </div>
+                <div class="mystery-box" onclick="openBox(this, 'Recharge')">
+                    <span class="z-10 text-2xl font-bold font-fira tracking-widest text-white opacity-0 transition-opacity duration-500">RECHARGE</span>
+                </div>
+                <div class="mystery-box" onclick="openBox(this, 'Stimulation')">
+                    <span class="z-10 text-xl font-bold font-fira tracking-widest text-white opacity-0 transition-opacity duration-500">STIMULATION</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 7: Memory Connect -->
+        <section id="slide-7" class="slide">
+            <div class="text-center mb-12">
+                <h2 class="font-montserrat text-5xl font-black mb-4 uppercase drop-shadow-lg">Memory Connect</h2>
+                <p class="text-xl text-text-muted font-light">Select a word on the left, then select its meaning on the right.</p>
+            </div>
+            
+            <div class="flex gap-8 w-full max-w-5xl" id="vocab-match-container">
+                <div class="flex-1 flex flex-col gap-5">
+                    <button class="btn-glass text-xl py-6 font-fira tracking-wider font-bold match-btn-v" data-word="Predictable" onclick="selectVocabMatch(this, 'word')">Predictable</button>
+                    <button class="btn-glass text-xl py-6 font-fira tracking-wider font-bold match-btn-v" data-word="Chaos" onclick="selectVocabMatch(this, 'word')">Chaos</button>
+                    <button class="btn-glass text-xl py-6 font-fira tracking-wider font-bold match-btn-v" data-word="Refuge" onclick="selectVocabMatch(this, 'word')">Refuge</button>
+                </div>
+                <div class="flex-[2] flex flex-col gap-5">
+                    <button class="btn-glass text-lg py-5 px-8 text-left match-btn-v" data-match="Chaos" onclick="selectVocabMatch(this, 'def')">A state of total confusion with no order or peace.</button>
+                    <button class="btn-glass text-lg py-5 px-8 text-left match-btn-v" data-match="Refuge" onclick="selectVocabMatch(this, 'def')">A safe place that provides protection from trouble.</button>
+                    <button class="btn-glass text-lg py-5 px-8 text-left match-btn-v" data-match="Predictable" onclick="selectVocabMatch(this, 'def')">Happening in a way that you expect; safe routines.</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 8: Data Recovery -->
+        <section id="slide-8" class="slide">
+            <div class="text-center mb-12">
+                <h2 class="font-montserrat text-5xl font-black mb-4 uppercase drop-shadow-lg">Data Recovery</h2>
+                <p class="text-xl text-text-muted font-light">Restore the paragraph using the correct semantic blocks.</p>
+            </div>
+
+            <div class="glass-panel p-16 w-full max-w-5xl text-center shadow-[0_0_30px_rgba(0,0,0,0.5)] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] relative">
+                <div class="absolute inset-0 bg-black/70 rounded-[1.5rem] z-0"></div>
+                <p class="text-3xl leading-[2.5] font-inter font-light text-text-muted relative z-10 text-left">
+                    After a long week of work, I desperately need some 
+                    <select id="cloze-1" class="mx-2 text-2xl font-bold bg-brand-dark/20"><option value="">---</option><option value="correct">solitude</option><option value="wrong">chaos</option></select>. 
+                    I avoid loud places because my brain requires less 
+                    <select id="cloze-2" class="mx-2 text-2xl font-bold bg-brand-dark/20"><option value="">---</option><option value="wrong">refuge</option><option value="correct">stimulation</option></select> 
+                    to feel happy. Home is my ultimate 
+                    <select id="cloze-3" class="mx-2 text-2xl font-bold bg-brand-dark/20"><option value="">---</option><option value="correct">refuge</option><option value="wrong">predictable</option></select>, 
+                    the only place where I can truly 
+                    <select id="cloze-4" class="mx-2 text-2xl font-bold bg-brand-dark/20"><option value="">---</option><option value="wrong">introvert</option><option value="correct">recharge</option></select>.
+                </p>
+                <button class="btn-primary mt-12 text-xl px-12 py-4 relative z-10" onclick="verifyDataRecovery(this)">Run Diagnostic <i class="fa-solid fa-microchip ml-2"></i></button>
+            </div>
+            
+            <div class="speaking-hub hidden w-full max-w-5xl mt-10 p-8 glass-panel border-l-8 border-l-brand-green bg-black/60">
+                <h3 class="text-brand-green font-bold mb-3 text-xl uppercase tracking-widest"><i class="fa-solid fa-microphone-lines mr-2"></i> Speaking Hub</h3>
+                <p class="text-white text-xl">Read the complete paragraph aloud. Does this sound exactly like you, or totally the opposite?</p>
+            </div>
+        </section>
+
+        <!-- Slide 9: Case Study (Video) -->
+        <section id="slide-9" class="slide">
+            <h2 class="font-montserrat text-5xl font-black mb-6 uppercase drop-shadow-lg text-center">Case Study: Input</h2>
+            <p class="text-xl text-text-muted font-light mb-8 text-center max-w-3xl">Watch the full analysis. Pay attention to the concept of the "Nervous System".</p>
+            
+            <div class="glass-panel p-4 w-full max-w-5xl mb-10 relative rounded-[2rem] overflow-hidden aspect-video shadow-[0_0_40px_rgba(0,0,0,0.8)] border-4 border-glass-border">
+                <iframe class="w-full h-full rounded-2xl" src="https://www.youtube.com/embed/2GZi3RM6QVg" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+            </div>
+
+            <div class="w-full max-w-5xl p-8 glass-panel border-l-8 border-l-brand-green bg-black/60">
+                <h3 class="text-brand-green font-bold mb-3 text-xl uppercase tracking-widest"><i class="fa-solid fa-microphone-lines mr-2"></i> Post-Video Discussion</h3>
+                <p class="text-white text-xl font-light mb-6">The video claims that staying home isn't laziness; it's how some nervous systems are wired (Optimal Arousal Theory). Do you agree that it's biological rather than just a "choice"?</p>
+                <button class="btn-primary" onclick="addXP(150, this); nextSlide()">We discussed it <i class="fa-solid fa-check ml-2"></i></button>
+            </div>
+        </section>
+
+        <!-- Slide 10: Fact Checker -->
+        <section id="slide-10" class="slide">
+            <div class="text-center mb-12">
+                <h2 class="font-montserrat text-5xl font-black mb-4 uppercase drop-shadow-lg">Fact Checker</h2>
+                <p class="text-xl text-text-muted font-light">Verify the data based on the case study video.</p>
+            </div>
+
+            <div class="w-full max-w-4xl space-y-6">
+                <div class="glass-panel p-8 flex justify-between items-center group shadow-lg">
+                    <p class="text-2xl w-2/3 font-light">"Introverts require less stimulation to feel good, while extroverts require more."</p>
+                    <div class="flex gap-3">
+                        <button class="btn-glass text-xl px-6 py-3 hover:bg-brand-dark hover:border-brand-green" onclick="checkAnswer(true, this); checkAllFacts()"><i class="fa-solid fa-check"></i> True</button>
+                        <button class="btn-glass text-xl px-6 py-3 hover:bg-incorrect hover:border-incorrect" onclick="checkAnswer(false, this)"><i class="fa-solid fa-times"></i> False</button>
+                    </div>
+                </div>
+                <div class="glass-panel p-8 flex justify-between items-center group shadow-lg">
+                    <p class="text-2xl w-2/3 font-light">"Staying home means you are doing absolutely nothing and wasting time."</p>
+                    <div class="flex gap-3">
+                        <button class="btn-glass text-xl px-6 py-3 hover:bg-incorrect hover:border-incorrect" onclick="checkAnswer(false, this)"><i class="fa-solid fa-check"></i> True</button>
+                        <button class="btn-glass text-xl px-6 py-3 hover:bg-brand-dark hover:border-brand-green" onclick="checkAnswer(true, this); checkAllFacts()"><i class="fa-solid fa-times"></i> False</button>
+                    </div>
+                </div>
+                <div class="glass-panel p-8 flex justify-between items-center group shadow-lg">
+                    <p class="text-2xl w-2/3 font-light">"At home, you have complete control over the environment (lighting, noise, vibe)."</p>
+                    <div class="flex gap-3">
+                        <button class="btn-glass text-xl px-6 py-3 hover:bg-brand-dark hover:border-brand-green" onclick="checkAnswer(true, this); checkAllFacts()"><i class="fa-solid fa-check"></i> True</button>
+                        <button class="btn-glass text-xl px-6 py-3 hover:bg-incorrect hover:border-incorrect" onclick="checkAnswer(false, this)"><i class="fa-solid fa-times"></i> False</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="speaking-hub hidden w-full max-w-4xl mt-10 p-8 glass-panel border-l-8 border-l-brand-green bg-black/60" id="fact-hub">
+                <h3 class="text-brand-green font-bold mb-3 text-xl uppercase tracking-widest"><i class="fa-solid fa-microphone-lines mr-2"></i> Speaking Hub</h3>
+                <p class="text-white text-xl">How important is "controlling the vibe" (lighting, temperature, music) for your peace of mind?</p>
+            </div>
+        </section>
+
+        <!-- Slide 11: Quote Analysis -->
+        <section id="slide-11" class="slide">
+            <h2 class="font-montserrat text-5xl font-black mb-12 uppercase drop-shadow-lg text-center">Quote Analysis</h2>
+            <div class="glass-panel p-16 w-full max-w-4xl text-center mb-10 border-t-8 border-brand-green bg-black/50 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                <i class="fa-solid fa-quote-left text-6xl text-brand-green mb-8 opacity-50 drop-shadow-md"></i>
+                <p class="text-4xl font-bold font-montserrat italic mb-10 leading-tight">"Society romanticizes being out there... but what if your best life is a documentary, some soup, and zero obligations?"</p>
+                <div class="bg-black/60 p-6 rounded-xl border border-glass-border inline-block">
+                    <p class="text-xl text-text-muted font-light">Do you agree that society pushes an "Extrovert Ideal"?</p>
+                </div>
+            </div>
+            <button class="btn-primary text-xl px-12 py-4" onclick="addXP(100, this); nextSlide()">Analysis Complete <i class="fa-solid fa-arrow-right ml-2"></i></button>
+        </section>
+
+        <!-- Slide 12: Syntax Framework -->
+        <section id="slide-12" class="slide">
+            <div class="text-center mb-12">
+                <h2 class="font-montserrat text-5xl font-black mb-4 uppercase drop-shadow-lg">Syntax Framework</h2>
+                <p class="text-xl text-text-muted font-light max-w-3xl mx-auto">When we talk about habits and preferences, the second verb's format changes depending on the first verb.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-10 w-full max-w-6xl">
+                <div class="glass-panel p-10 border-t-8 border-brand-green relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10"><i class="fa-solid fa-spinner text-8xl text-brand-green"></i></div>
+                    <h3 class="font-fira text-3xl font-bold mb-4 text-brand-green">Verb + Gerund (ing)</h3>
+                    <p class="text-lg text-text-muted mb-8 border-b border-glass-border pb-4">Used for enjoyment, avoidance, or processes.</p>
+                    <ul class="space-y-5 font-bold text-xl mb-10 relative z-10">
+                        <li>I <span class="text-brand-green">enjoy</span> stay<span class="text-brand-green bg-brand-green/20 px-1 rounded">ing</span> home.</li>
+                        <li>They <span class="text-brand-green">avoid</span> go<span class="text-brand-green bg-brand-green/20 px-1 rounded">ing</span> out.</li>
+                        <li>She <span class="text-brand-green">finishes</span> work<span class="text-brand-green bg-brand-green/20 px-1 rounded">ing</span> late.</li>
+                    </ul>
+                    <div class="flex flex-wrap gap-3 font-fira font-bold text-white relative z-10">
+                        <span class="bg-brand-dark border border-brand-green px-4 py-2 rounded-lg shadow-md">enjoy</span>
+                        <span class="bg-brand-dark border border-brand-green px-4 py-2 rounded-lg shadow-md">avoid</span>
+                        <span class="bg-brand-dark border border-brand-green px-4 py-2 rounded-lg shadow-md">finish</span>
+                        <span class="bg-brand-dark border border-brand-green px-4 py-2 rounded-lg shadow-md">mind</span>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-10 border-t-8 border-white relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10"><i class="fa-solid fa-arrow-right-to-bracket text-8xl text-white"></i></div>
+                    <h3 class="font-fira text-3xl font-bold mb-4 text-white">Verb + Infinitive (to)</h3>
+                    <p class="text-lg text-text-muted mb-8 border-b border-glass-border pb-4">Used for needs, plans, or future intentions.</p>
+                    <ul class="space-y-5 font-bold text-xl mb-10 relative z-10">
+                        <li>I <span class="text-text-muted">need</span> <span class="border-b-2 border-white">to recharge</span>.</li>
+                        <li>We <span class="text-text-muted">decided</span> <span class="border-b-2 border-white">to stay</span>.</li>
+                        <li>He <span class="text-text-muted">wants</span> <span class="border-b-2 border-white">to read</span>.</li>
+                    </ul>
+                    <div class="flex flex-wrap gap-3 font-fira font-bold text-white relative z-10">
+                        <span class="bg-white/10 border border-white/30 px-4 py-2 rounded-lg shadow-md">need</span>
+                        <span class="bg-white/10 border border-white/30 px-4 py-2 rounded-lg shadow-md">want</span>
+                        <span class="bg-white/10 border border-white/30 px-4 py-2 rounded-lg shadow-md">decide</span>
+                        <span class="bg-white/10 border border-white/30 px-4 py-2 rounded-lg shadow-md">plan</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 13: Advanced Syntax Framework -->
+        <section id="slide-13" class="slide">
+            <div class="text-center mb-12">
+                <h2 class="font-montserrat text-5xl font-black mb-4 uppercase drop-shadow-lg">Advanced Protocols</h2>
+                <p class="text-xl text-text-muted font-light max-w-3xl mx-auto">Warning: Some verbs completely change their meaning depending on what follows.</p>
+            </div>
+            
+            <div class="glass-panel p-12 w-full max-w-5xl shadow-[0_0_40px_rgba(0,0,0,0.6)] border-l-8 border-l-brand-green mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div>
+                        <h3 class="font-fira text-3xl font-bold mb-4 text-brand-green">Stop + Gerund</h3>
+                        <p class="text-lg text-text-muted mb-6">To quit an action entirely.</p>
+                        <div class="bg-black/50 p-6 rounded-xl border border-glass-border">
+                            <p class="text-2xl font-bold">"I stopped <span class="text-brand-green">going</span> to clubs."</p>
+                            <p class="text-sm mt-2 opacity-70">(I don't go to clubs anymore. It's over.)</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-fira text-3xl font-bold mb-4 text-white">Stop + Infinitive</h3>
+                        <p class="text-lg text-text-muted mb-6">To interrupt what you are doing in order to do something else.</p>
+                        <div class="bg-black/50 p-6 rounded-xl border border-glass-border">
+                            <p class="text-2xl font-bold">"I stopped <span class="border-b-2 border-white">to drink</span> water."</p>
+                            <p class="text-sm mt-2 opacity-70">(I was walking, I paused, and then I drank water.)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="btn-primary text-xl px-12 py-4" onclick="addXP(100, this); nextSlide()">Acknowledge</button>
+        </section>
+
+        <!-- Slide 14: Sandbox -->
+        <section id="slide-14" class="slide">
+            <h2 class="font-montserrat text-5xl font-black mb-10 uppercase drop-shadow-lg text-center">Syntax Sandbox</h2>
+            <p class="text-xl text-text-muted mb-10 text-center max-w-3xl">Test the logic. Click the buttons to see how the meaning shifts.</p>
+            
+            <div class="glass-panel p-16 w-full max-w-4xl text-center shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                <div class="text-4xl font-bold mb-12 flex items-center justify-center gap-4 flex-wrap leading-relaxed">
+                    <span>I remembered</span>
+                    <span id="sandbox-blank" class="border-b-4 border-dashed border-white w-48 inline-block text-brand-green pb-2">________</span>
+                    <span>the door.</span>
+                </div>
+                
+                <div class="flex justify-center gap-6 mb-12">
+                    <button class="btn-glass font-fira text-2xl px-10 py-4 hover:bg-brand-dark hover:border-brand-green" onclick="updateSandbox('locking', 'Memory: I have a memory in my brain of the moment I locked it.')">locking</button>
+                    <button class="btn-glass font-fira text-2xl px-10 py-4 hover:bg-brand-dark hover:border-brand-green" onclick="updateSandbox('to lock', 'Action: I didn\'t forget. I remembered my obligation, and then I locked it.')">to lock</button>
+                </div>
+
+                <div id="sandbox-meaning" class="bg-black/60 p-8 rounded-2xl border border-glass-border min-h-[120px] flex items-center justify-center text-2xl font-light text-text-muted italic shadow-inner">
+                    Select a grammatical structure to analyze the meaning.
+                </div>
+            </div>
+            
+            <div class="speaking-hub hidden w-full max-w-4xl mt-10 p-8 glass-panel border-l-8 border-l-brand-green bg-black/60">
+                <h3 class="text-brand-green font-bold mb-3 text-xl uppercase tracking-widest"><i class="fa-solid fa-microphone-lines mr-2"></i> Speaking Hub</h3>
+                <p class="text-white text-xl">Tell me something you "remember doing" when you were a child.</p>
+            </div>
+        </section>
+
+        <!-- Slide 15: Gamified Sorter -->
+        <section id="slide-15" class="slide">
+            <div class="text-center mb-10">
+                <h2 class="font-montserrat text-5xl font-black mb-4 uppercase drop-shadow-lg">The Sorter</h2>
+                <p class="text-xl text-text-muted font-light">Where does this verb belong? Click the correct bucket to sort it.</p>
+            </div>
+
+            <div class="text-center mb-12 h-[120px] flex items-center justify-center">
+                <div id="active-sort-word" class="sorter-item pop-anim" data-type="gerund">avoid</div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-12 w-full max-w-4xl">
+                <div class="sorter-bucket text-center" onclick="checkSort('gerund', this)">
+                    <i class="fa-solid fa-rotate text-5xl text-brand-green mb-4 drop-shadow-[0_0_10px_rgba(29,185,84,0.5)]"></i>
+                    <h3 class="font-montserrat font-black text-2xl uppercase tracking-widest text-brand-green">+ Gerund (ing)</h3>
+                </div>
+                <div class="sorter-bucket text-center" onclick="checkSort('infinitive', this)">
+                    <i class="fa-solid fa-arrow-right text-5xl text-white mb-4 drop-shadow-md"></i>
+                    <h3 class="font-montserrat font-black text-2xl uppercase tracking-widest text-white">+ Infinitive (to)</h3>
+                </div>
+            </div>
+            
+            <div class="speaking-hub hidden w-full max-w-4xl mt-12 p-8 glass-panel border-l-8 border-l-brand-green bg-black/60" id="sorter-hub">
+                <h3 class="text-brand-green font-bold mb-3 text-xl uppercase tracking-widest"><i class="fa-solid fa-microphone-lines mr-2"></i> Speaking Hub</h3>
+                <p class="text-white text-xl font-light">Great job! Now create a sentence using: <strong class="text-brand-green">Avoid + Gerund</strong>.</p>
+            </div>
+        </section>
+
+        <!-- Slide 16: Syntax Assembly -->
+        <section id="slide-16" class="slide">
+            <div class="text-center mb-12">
+                <h2 class="font-montserrat text-5xl font-black mb-4 uppercase drop-shadow-lg">Syntax Assembly</h2>
+                <p class="text-xl text-text-muted font-light">Click the blocks in the correct order to reconstruct the sentence.</p>
+            </div>
+
+            <div class="glass-panel p-12 w-full max-w-5xl text-center shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+                <div id="assembly-zone" class="drop-zone mb-10">
+                    <span class="text-text-muted opacity-50 font-inter text-lg">Build sentence here...</span>
+                </div>
+                
+                <div id="assembly-chips" class="flex flex-wrap justify-center gap-4 mb-10 min-h-[60px]">
+                    <button class="btn-glass text-2xl font-bold font-inter shadow-lg hover:shadow-[0_0_15px_rgba(29,185,84,0.4)] px-8 py-4" onclick="moveChip(this)">at</button>
+                    <button class="btn-glass text-2xl font-bold font-inter shadow-lg hover:shadow-[0_0_15px_rgba(29,185,84,0.4)] px-8 py-4" onclick="moveChip(this)">enjoy</button>
+                    <button class="btn-glass text-2xl font-bold font-inter shadow-lg hover:shadow-[0_0_15px_rgba(29,185,84,0.4)] px-8 py-4" onclick="moveChip(this)">home.</button>
+                    <button class="btn-glass text-2xl font-bold font-inter shadow-lg hover:shadow-[0_0_15px_rgba(29,185,84,0.4)] px-8 py-4" onclick="moveChip(this)">I</button>
+                    <button class="btn-glass text-2xl font-bold font-inter shadow-lg hover:shadow-[0_0_15px_rgba(29,185,84,0.4)] px-8 py-4" onclick="moveChip(this)">staying</button>
+                </div>
+
+                <button class="btn-primary text-xl px-12 py-4" onclick="verifyAssembly(['I', 'enjoy', 'staying', 'at', 'home.'], this)">Verify System <i class="fa-solid fa-microchip ml-2"></i></button>
+            </div>
+            
+            <div class="speaking-hub hidden w-full max-w-5xl mt-10 p-8 glass-panel border-l-8 border-l-brand-green bg-black/60">
+                <h3 class="text-brand-green font-bold mb-3 text-xl uppercase tracking-widest"><i class="fa-solid fa-microphone-lines mr-2"></i> Speaking Hub</h3>
+                <p class="text-white text-lg">Now, make it negative. How would you say this if you hated it?</p>
+            </div>
+        </section>
+
+        <!-- Slide 17: Error Isolation -->
+        <section id="slide-17" class="slide">
+            <div class="text-center mb-12">
+                <h2 class="font-montserrat text-5xl font-black mb-4 uppercase drop-shadow-lg">Error Isolation</h2>
+                <p class="text-xl text-text-muted font-light">Find and click the grammatically incorrect block to fix the system.</p>
+            </div>
+
+            <div class="glass-panel p-16 w-full max-w-5xl text-center bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] relative">
+                <div class="absolute inset-0 bg-black/60 rounded-[1.5rem] z-0"></div>
+                <p class="text-4xl leading-[2.5] font-inter font-light text-text-muted relative z-10">
+                    <span class="error-block" onclick="checkErrorBlock(false, this)">My friend</span> 
+                    <span class="error-block text-white font-bold" onclick="checkErrorBlock(false, this)">suggested</span> 
+                    <span class="error-block" onclick="checkErrorBlock(true, this, 'watching')">to watch</span> 
+                    <span class="error-block" onclick="checkErrorBlock(false, this)">a documentary</span><br>
+                    <span class="error-block" onclick="checkErrorBlock(false, this)">instead of</span>
+                    <span class="error-block text-white font-bold" onclick="checkErrorBlock(false, this)">going</span>
+                    <span class="error-block" onclick="checkErrorBlock(false, this)">out tonight.</span>
+                </p>
+            </div>
+
+            <div class="speaking-hub hidden w-full max-w-5xl mt-10 p-8 glass-panel border-l-8 border-l-brand-green bg-black/60">
+                <h3 class="text-brand-green font-bold mb-3 text-xl uppercase tracking-widest"><i class="fa-solid fa-microphone-lines mr-2"></i> Speaking Hub</h3>
+                <p class="text-white text-lg">What is a documentary or movie you would suggest watching this weekend?</p>
+            </div>
+        </section>
+
+        <!-- Slide 18: Rapid Fire -->
+        <section id="slide-18" class="slide">
+            <div class="text-center mb-12">
+                <h2 class="font-montserrat text-5xl font-black mb-4 uppercase drop-shadow-lg text-brand-green">Rapid Fire</h2>
+                <p class="text-xl text-text-muted font-light">Make quick decisions. Select the correct form.</p>
+            </div>
+
+            <div class="w-full max-w-4xl space-y-6">
+                <div class="glass-panel p-6 flex justify-between items-center group">
+                    <p class="text-2xl w-1/2">1. I don't mind __________.</p>
+                    <div class="flex gap-4">
+                        <button class="btn-glass px-8 hover:bg-brand-dark hover:border-brand-green" onclick="checkRapidFire(true, this, 1)">waiting</button>
+                        <button class="btn-glass px-8 hover:bg-incorrect hover:border-incorrect" onclick="checkRapidFire(false, this, 1)">to wait</button>
+                    </div>
+                </div>
+                <div class="glass-panel p-6 flex justify-between items-center group">
+                    <p class="text-2xl w-1/2">2. She hopes __________ early.</p>
+                    <div class="flex gap-4">
+                        <button class="btn-glass px-8 hover:bg-incorrect hover:border-incorrect" onclick="checkRapidFire(false, this, 2)">leaving</button>
+                        <button class="btn-glass px-8 hover:bg-brand-dark hover:border-brand-green" onclick="checkRapidFire(true, this, 2)">to leave</button>
+                    </div>
+                </div>
+                <div class="glass-panel p-6 flex justify-between items-center group">
+                    <p class="text-2xl w-1/2">3. We decided __________ home.</p>
+                    <div class="flex gap-4">
+                        <button class="btn-glass px-8 hover:bg-incorrect hover:border-incorrect" onclick="checkRapidFire(false, this, 3)">staying</button>
+                        <button class="btn-glass px-8 hover:bg-brand-dark hover:border-brand-green" onclick="checkRapidFire(true, this, 3)">to stay</button>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="rapid-fire-btn" class="btn-primary mt-12 text-xl px-12 py-4 opacity-50 pointer-events-none transition-all" onclick="revealHub(this)">Process Complete</button>
+
+            <div class="speaking-hub hidden w-full max-w-4xl mt-8 p-8 glass-panel border-l-8 border-l-brand-green bg-black/60">
+                <h3 class="text-brand-green font-bold mb-3 text-xl uppercase tracking-widest"><i class="fa-solid fa-microphone-lines mr-2"></i> Speaking Hub</h3>
+                <p class="text-white text-xl">Complete this sentence out loud: "This year, I deeply hope..."</p>
+            </div>
+        </section>
+
+        <!-- Slide 19: The Lie Detector -->
+        <section id="slide-19" class="slide">
+            <h2 class="font-montserrat text-5xl font-black mb-6 uppercase drop-shadow-lg text-center">The Lie Detector</h2>
+            <p class="text-xl text-text-muted mb-10 text-center max-w-3xl">Write 3 sentences using Gerunds or Infinitives about your habits. Two must be TRUE. One must be a LIE. The Teacher will guess.</p>
+
+            <div class="glass-panel p-10 w-full max-w-4xl flex flex-col gap-6 mb-10 shadow-[0_0_30px_rgba(0,0,0,0.5)] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] relative">
+                <div class="absolute inset-0 bg-black/70 rounded-[1.5rem] z-0"></div>
+                <input type="text" placeholder="1. I enjoy..." class="w-full bg-black/60 border-2 border-glass-border rounded-xl p-6 text-white focus:outline-none focus:border-brand-green font-inter text-xl relative z-10 shadow-inner">
+                <input type="text" placeholder="2. I avoid..." class="w-full bg-black/60 border-2 border-glass-border rounded-xl p-6 text-white focus:outline-none focus:border-brand-green font-inter text-xl relative z-10 shadow-inner">
+                <input type="text" placeholder="3. I refuse to..." class="w-full bg-black/60 border-2 border-glass-border rounded-xl p-6 text-white focus:outline-none focus:border-brand-green font-inter text-xl relative z-10 shadow-inner">
+                
+                <button class="btn-primary mt-6 text-xl py-4 relative z-10" onclick="checkAnswer(true, this, 200); revealHub(this)">Lock Answers & Present</button>
+            </div>
+
+            <div class="speaking-hub hidden w-full max-w-4xl p-8 glass-panel border-l-8 border-l-brand-green bg-black/60">
+                <h3 class="text-brand-green font-bold mb-3 text-xl uppercase tracking-widest"><i class="fa-solid fa-microphone-lines mr-2"></i> Speaking Hub</h3>
+                <p class="text-white text-xl font-light">Teacher: Ask follow-up questions to figure out which statement is the lie before guessing.</p>
+            </div>
+        </section>
+
+        <!-- Slide 20: THE SPECTRUM QUIZ -->
+        <section id="slide-20" class="slide">
+            <div class="text-center mb-8">
+                <h2 class="font-montserrat text-5xl font-black mb-2 uppercase drop-shadow-lg text-brand-green">The Spectrum Assessment</h2>
+                <p class="text-xl text-text-muted font-light">Answer honestly. Every answer will be discussed.</p>
+            </div>
+
+            <div class="glass-panel w-full max-w-4xl overflow-hidden relative min-h-[550px] flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.6)] border-t-8 border-brand-green bg-black/50">
+                
+                <div class="w-full h-2 bg-glass-border">
+                    <div id="quiz-progress" class="h-full bg-brand-green w-[10%] transition-all duration-500 shadow-[0_0_10px_rgba(29,185,84,0.8)]"></div>
+                </div>
+                
+                <div class="flex justify-between items-center p-6 border-b border-glass-border">
+                    <span class="font-fira text-brand-green font-bold tracking-widest" id="quiz-counter">QUESTION 01 / 10</span>
+                    <i class="fa-solid fa-fingerprint text-2xl text-text-muted opacity-50"></i>
+                </div>
+
+                <div id="quiz-content" class="flex-1 p-10 flex flex-col justify-center quiz-slide-content">
+                    <h3 id="quiz-question" class="text-3xl font-montserrat font-bold mb-10 text-center leading-relaxed">Loading...</h3>
+                    <div class="flex flex-col gap-4 w-full max-w-2xl mx-auto" id="quiz-options"></div>
+                </div>
+
+                <div id="quiz-hub" class="hidden w-full p-8 bg-black/80 border-t border-brand-green absolute bottom-0 left-0 quiz-slide-content">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-brand-green font-bold text-xl uppercase tracking-widest"><i class="fa-solid fa-microphone-lines mr-2"></i> Discuss</h3>
+                        <button class="btn-primary py-2 px-6" onclick="nextQuizQuestion()">Next Scenario <i class="fa-solid fa-arrow-right ml-2"></i></button>
+                    </div>
+                    <p id="quiz-discussion-prompt" class="text-white text-2xl font-light italic">Prompt...</p>
+                </div>
+
+                <div id="quiz-result" class="hidden flex-1 p-10 flex flex-col items-center justify-center text-center">
+                    <i id="result-icon" class="fa-solid fa-brain text-7xl text-brand-green mb-6 drop-shadow-[0_0_20px_rgba(29,185,84,0.8)]"></i>
+                    <h3 class="font-fira text-brand-green font-bold tracking-widest mb-2 uppercase">Diagnostic Complete</h3>
+                    <h2 id="result-title" class="font-montserrat text-5xl font-black mb-6 uppercase">Result</h2>
+                    <p id="result-desc" class="text-xl text-text-muted max-w-2xl leading-relaxed mb-10">Desc</p>
+                    <button class="btn-primary text-xl px-10 py-4" onclick="addXP(500, this); nextSlide()">Proceed to Debrief <i class="fa-solid fa-arrow-right ml-2"></i></button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 21: Quiz Debrief -->
+        <section id="slide-21" class="slide">
+            <h2 class="font-montserrat text-5xl font-black mb-12 uppercase drop-shadow-lg text-center">Assessment Debrief</h2>
+            <div class="glass-panel p-16 w-full max-w-4xl text-center mb-10 border-t-8 border-brand-green bg-black/50 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                <i class="fa-solid fa-clipboard-check text-6xl text-brand-green mb-8 drop-shadow-md"></i>
+                <p class="text-3xl font-light mb-10 leading-relaxed text-white">Do you feel the <strong class="text-brand-green font-bold">Spectrum Assessment</strong> accurately captured your personality?</p>
+                
+                <div class="bg-black/60 p-8 rounded-xl border border-glass-border text-left inline-block">
+                    <p class="text-xl text-text-muted italic">"Most people are not 100% extroverts or 100% introverts. The context matters."</p>
+                </div>
+            </div>
+            <button class="btn-primary text-xl px-12 py-4" onclick="addXP(100, this); nextSlide()">Next Module <i class="fa-solid fa-arrow-right ml-2"></i></button>
+        </section>
+
+        <!-- Slide 22: The Extrovert Ideal (Reading) -->
+        <section id="slide-22" class="slide">
+            <h2 class="font-montserrat text-5xl font-black mb-10 uppercase drop-shadow-lg text-center">Intel Report</h2>
+            <p class="text-xl text-text-muted mb-10 text-center">Read the intercepted psychological report.</p>
+            
+            <div class="glass-panel p-12 w-full max-w-4xl text-left shadow-[0_0_40px_rgba(0,0,0,0.6)] border-l-8 border-l-white bg-black/60 relative">
+                <i class="fa-solid fa-file-lines absolute top-8 right-8 text-6xl opacity-10"></i>
+                <h3 class="font-montserrat text-3xl font-black text-white mb-6 uppercase">The Extrovert Ideal</h3>
+                <p class="text-xl font-light leading-loose text-text-muted mb-6">
+                    In her book <em>Quiet</em>, Susan Cain argues that modern Western culture misunderstands and undervalues the traits of introverted people. Society is dominated by the "Extrovert Ideal"—the belief that the ideal self is gregarious, alpha, and comfortable in the spotlight.
+                </p>
+                <p class="text-xl font-light leading-loose text-text-muted">
+                    As a result, schools and workplaces are designed for extroverts, with open-plan offices and constant group work. This forces introverts to act like extroverts, which is exhausting and ignores the deep creativity that comes from solitude.
+                </p>
+            </div>
+            <button class="btn-primary mt-12 text-xl px-12 py-4" onclick="nextSlide()">Analyze Report <i class="fa-solid fa-magnifying-glass ml-2"></i></button>
+        </section>
+
+        <!-- Slide 23: Intel Analysis -->
+        <section id="slide-23" class="slide">
+            <h2 class="font-montserrat text-5xl font-black mb-12 uppercase drop-shadow-lg text-center">Intel Analysis</h2>
+            <div class="glass-panel p-16 w-full max-w-4xl text-center mb-10 border-t-8 border-brand-green bg-black/50 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                <h3 class="text-3xl font-bold mb-8 uppercase text-brand-green tracking-wider">Discussion Protocol</h3>
+                
+                <div class="flex flex-col gap-6 text-left w-full max-w-3xl mx-auto">
+                    <div class="bg-black/60 p-6 rounded-xl border border-glass-border">
+                        <p class="text-2xl text-white font-light">1. Do you agree that the corporate world rewards the "loudest" person in the room?</p>
+                    </div>
+                    <div class="bg-black/60 p-6 rounded-xl border border-glass-border">
+                        <p class="text-2xl text-white font-light">2. How can companies create better spaces for people who need quiet?</p>
+                    </div>
+                </div>
+            </div>
+            <button class="btn-primary text-xl px-12 py-4" onclick="addXP(150, this); nextSlide()">Proceed <i class="fa-solid fa-check ml-2"></i></button>
+        </section>
+
+        <!-- Slide 24: Stand Your Ground -->
+        <section id="slide-24" class="slide">
+            <h2 class="font-montserrat text-5xl font-black mb-12 uppercase drop-shadow-lg text-center">Stand Your Ground</h2>
+            <div class="glass-panel p-16 w-full max-w-4xl text-center mb-10 border-t-8 border-brand-green bg-black/50 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                <i class="fa-solid fa-quote-left text-5xl text-brand-green mb-6 opacity-50"></i>
+                <p class="text-4xl font-bold font-montserrat italic mb-12 leading-tight">"Extroverts make better leaders because they are not afraid to talk to anyone."</p>
+                <div class="flex justify-center gap-6">
+                    <button class="btn-glass text-xl px-10 py-4 hover:bg-incorrect hover:border-incorrect" onclick="checkAnswer(true, this, 150); revealHub(this)">Disagree</button>
+                    <button class="btn-glass text-xl px-10 py-4 hover:bg-gray-500 hover:border-gray-500" onclick="checkAnswer(true, this, 150); revealHub(this)">Neutral</button>
+                    <button class="btn-glass text-xl px-10 py-4 hover:bg-brand-dark hover:border-brand-green" onclick="checkAnswer(true, this, 150); revealHub(this)">Agree</button>
+                </div>
+            </div>
+
+            <div class="speaking-hub hidden w-full max-w-4xl p-8 glass-panel border-l-8 border-l-brand-green bg-black/60">
+                <h3 class="text-brand-green font-bold mb-3 text-xl uppercase tracking-widest"><i class="fa-solid fa-gavel mr-2"></i> The Floor is Yours</h3>
+                <p class="text-white text-xl font-light">Defend your position. You have 60 seconds (Teacher, start the HUD timer).</p>
+            </div>
+        </section>
+
+        <!-- Slide 25: Crisis Management -->
+        <section id="slide-25" class="slide">
+            <div class="text-center mb-10">
+                <h2 class="font-montserrat text-5xl font-black mb-4 uppercase drop-shadow-lg">Crisis Management</h2>
+                <p class="text-xl text-text-muted font-light">Your weekend peace is under attack. Choose the grammatically correct response.</p>
+            </div>
+
+            <div class="glass-panel p-0 w-full max-w-md flex flex-col h-[600px] overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.6)] border-2 border-glass-border">
+                <div class="bg-black/80 p-5 border-b border-glass-border flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-xl font-bold">A</div>
+                    <div>
+                        <h4 class="font-bold text-xl">Alex</h4>
+                        <p class="text-sm text-brand-green">Online</p>
+                    </div>
+                </div>
+                
+                <div class="flex-1 p-6 flex flex-col bg-black/40 overflow-y-auto" id="chat-box">
+                    <div class="bg-bg-highlight p-4 rounded-2xl rounded-tl-sm max-w-[85%] self-start mb-4 shadow-md text-lg">
+                        Hey! We're all going to that crowded club downtown tonight. It's gonna be chaotic but fun. You coming?? 🎉
+                    </div>
+                </div>
+
+                <div class="p-6 bg-black/80 border-t border-glass-border flex flex-col gap-3">
+                    <button class="btn-glass text-left text-lg hover:bg-brand-dark" onclick="checkPhone(false, this)">I avoid to go to clubs, sorry.</button>
+                    <button class="btn-glass text-left text-lg hover:bg-brand-dark" onclick="checkPhone(false, this)">I decided staying home today.</button>
+                    <button class="btn-glass text-left text-lg hover:bg-brand-dark" onclick="checkPhone(true, this)">I'm planning to stay home tonight.</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 26: Real-World Simulation -->
+        <section id="slide-26" class="slide">
+            <h2 class="font-montserrat text-5xl font-black mb-12 uppercase drop-shadow-lg text-center">Real-World Simulation</h2>
+            <div class="glass-panel p-16 w-full max-w-4xl text-center mb-10 border-t-8 border-brand-green bg-black/50 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                <i class="fa-solid fa-street-view text-6xl text-brand-green mb-6 drop-shadow-[0_0_15px_rgba(29,185,84,0.5)]"></i>
+                <h3 class="text-3xl font-bold mb-6 uppercase text-brand-green tracking-wider">The Trap</h3>
+                <p class="text-2xl font-light mb-10 leading-relaxed text-text-muted">You are stuck at a networking event. Your phone is dead, and a colleague who loves small talk won't stop talking to you. Your social battery is at 1%.</p>
+                
+                <div class="bg-black/60 p-8 rounded-xl text-left border border-glass-border">
+                    <h4 class="font-fira text-brand-green font-bold mb-4"><i class="fa-solid fa-masks-theater mr-2"></i> ROLEPLAY INSTRUCTIONS:</h4>
+                    <p class="text-white text-xl">Politely excuse yourself from the conversation using <strong class="text-brand-green border-b border-brand-green">Need + Infinitive</strong> or <strong class="text-brand-green border-b border-brand-green">Avoid + Gerund</strong>.</p>
+                    <p class="text-text-muted mt-4 italic">Teacher: Play the role of the annoying colleague. Make it hard for them to leave!</p>
+                </div>
+            </div>
+
+            <button class="btn-primary text-xl px-12 py-4" onclick="addXP(300, this); revealHub(this)">Simulation Complete <i class="fa-solid fa-star ml-2"></i></button>
+            
+            <div class="speaking-hub hidden w-full max-w-4xl mt-8 p-8 glass-panel border-l-8 border-l-brand-green bg-black/60">
+                <h3 class="text-brand-green font-bold mb-3 text-xl uppercase tracking-widest"><i class="fa-solid fa-microphone-lines mr-2"></i> Debrief</h3>
+                <p class="text-white text-lg">Have you ever had to do this in real life? Tell me the story.</p>
+            </div>
+        </section>
+
+        <!-- Slide 27: The Final Pitch -->
+        <section id="slide-27" class="slide">
+            <div class="text-center mb-10">
+                <h2 class="font-montserrat text-6xl font-black mb-4 uppercase drop-shadow-lg text-brand-green">The Final Pitch</h2>
+                <p class="text-2xl text-text-muted font-light">The ultimate test of fluency.</p>
+            </div>
+            
+            <div class="glass-panel p-12 w-full max-w-4xl text-center border-4 border-brand-green shadow-[0_0_40px_rgba(29,185,84,0.3)] bg-black/60">
+                <div class="w-24 h-24 bg-brand-green rounded-full flex items-center justify-center mx-auto mb-8 shadow-[0_0_20px_var(--glow-green)]">
+                    <i class="fa-solid fa-microphone-alt text-5xl text-white"></i>
+                </div>
+                <h3 class="text-3xl font-bold mb-10 leading-relaxed">Describe your ultimate "Low Stimulation" weekend and why it makes you happy.</h3>
+                
+                <div class="bg-black/50 p-8 rounded-2xl text-left inline-block mb-10 border border-glass-border">
+                    <h4 class="font-fira text-brand-green mb-6 text-xl tracking-widest uppercase font-bold"><i class="fa-solid fa-list-check mr-2"></i> Mandatory Checklist:</h4>
+                    <ul class="space-y-4 font-bold text-xl text-text-muted">
+                        <li class="flex items-center"><i class="fa-regular fa-square mr-4 text-2xl text-brand-green"></i> Use at least 2 Gerunds.</li>
+                        <li class="flex items-center"><i class="fa-regular fa-square mr-4 text-2xl text-white"></i> Use at least 2 Infinitives.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <button class="btn-primary mt-12 text-2xl px-16 py-5 shadow-[0_0_20px_rgba(29,185,84,0.5)]" onclick="completeMission()">Complete Mission <i class="fa-solid fa-flag-checkered ml-3"></i></button>
+        </section>
+
+        <!-- Slide 28: Mission Complete -->
+        <section id="slide-28" class="slide">
+            <div class="text-center mt-10">
+                <div class="relative inline-block">
+                    <i class="fa-solid fa-trophy text-[10rem] text-yellow-400 mb-8 filter drop-shadow-[0_0_40px_rgba(250,204,21,0.6)] animate-bounce relative z-10"></i>
+                    <div class="absolute inset-0 bg-yellow-400 blur-[80px] opacity-30 rounded-full z-0"></div>
+                </div>
+                <h1 class="font-montserrat text-7xl font-black uppercase mb-6 drop-shadow-2xl text-white">Mission Complete</h1>
+                
+                <div class="glass-panel p-12 inline-block text-left mt-8 w-[500px] bg-black/60 border-t-8 border-brand-green shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+                    <div class="flex justify-between items-center mb-6 border-b border-glass-border pb-6">
+                        <span class="text-text-muted font-fira uppercase tracking-widest">Agent</span>
+                        <span class="font-bold text-3xl text-white" id="final-name">Player</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-text-muted font-fira uppercase tracking-widest">Total EXP</span>
+                        <span class="font-black text-brand-green text-5xl font-fira drop-shadow-[0_0_10px_rgba(29,185,84,0.8)]" id="final-xp">0</span>
+                    </div>
+                </div>
+
+                <div class="mt-16">
+                    <button class="btn-glass hover:bg-white hover:text-black text-xl px-10 py-4 font-bold border-white" onclick="location.reload()"><i class="fa-solid fa-power-off mr-3"></i> Reboot System</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- BOTTOM NAVIGATION -->
+    <nav class="bottom-nav">
+        <div class="flex gap-4">
+            <button class="btn-ghost hover:bg-brand-green" onclick="toggleSidebar('hud-sidebar')" title="Command Center"><i class="fa-solid fa-gamepad text-2xl"></i></button>
+            <button class="btn-ghost hover:bg-white hover:text-black" onclick="toggleSidebar('wb-sidebar')" title="Whiteboard"><i class="fa-solid fa-pen-to-square text-2xl"></i></button>
+        </div>
+        <div class="flex gap-4 items-center">
+            <button class="btn-glass flex items-center justify-center w-14 h-14 rounded-full" onclick="prevSlide()"><i class="fa-solid fa-chevron-left text-xl"></i></button>
+            <div class="flex items-center justify-center font-fira text-text-muted px-6 text-xl font-bold bg-black/40 rounded-full h-12 border border-glass-border">
+                <span id="slide-counter" class="text-white">01</span> <span class="mx-2 opacity-50">/</span> 28
+            </div>
+            <button class="btn-glass flex items-center justify-center w-14 h-14 rounded-full" onclick="nextSlide()"><i class="fa-solid fa-chevron-right text-xl"></i></button>
+        </div>
+    </nav>
+
+    <!-- LOGIC SCRIPT -->
+    <script>
+        // STATE
+        let GameState = {
+            name: "Agent",
+            xp: 0,
+            currentSlide: 1,
+            totalSlides: 28
+        };
+
+        const VOCAB = {
+            "Solitude": { phonetics: "/ˈsɒl.ɪ.tjuːd/", def: "The state of being alone, especially when this is peaceful and pleasant.", ctx: "She enjoyed the solitude of the empty house.", q: "When do you crave solitude?" },
+            "Introvert": { phonetics: "/ˈɪn.trə.vɜːt/", def: "Someone who prefers calm environments and recharges by being alone.", ctx: "As an introvert, he avoided loud networking events.", q: "Do you consider yourself an introvert or an extrovert?" },
+            "Recharge": { phonetics: "/ˌriːˈtʃɑːdʒ/", def: "To get back your energy and strength.", ctx: "I need to go home and recharge my social battery.", q: "What is your favorite way to recharge?" },
+            "Stimulation": { phonetics: "/ˌstɪm.jəˈleɪ.ʃən/", def: "Something that causes excitement or interest.", ctx: "Optimal arousal theory explains our need for stimulation.", q: "Describe the most overstimulating place you've ever been forced to endure. How did you cope?" },
+            "Predictable": { phonetics: "/prɪˈdɪk.tə.bəl/", def: "Happening or behaving in a way that you expect.", ctx: "At home, the environment is safe and predictable.", q: "Do you like routines or spontaneous plans?" },
+            "Chaos": { phonetics: "/ˈkeɪ.ɒs/", def: "A state of total confusion with no order.", ctx: "Extroverts get their energy from the noise and chaos.", q: "Can you focus when there is chaos around you?" },
+            "Refuge": { phonetics: "/ˈref.juːdʒ/", def: "A place that provides protection or shelter.", ctx: "For some, home becomes both a refuge and a cage.", q: "Where is your personal refuge?" }
+        };
+
+        // START GAME
+        function startGame() {
+            const nameInput = document.getElementById('player-name').value;
+            GameState.name = nameInput.trim() === "" ? "Unknown Agent" : nameInput;
+            nextSlide();
+        }
+
+        // NAVIGATION
+        function nextSlide() {
+            if(GameState.currentSlide < GameState.totalSlides) {
+                const currentEl = document.getElementById(`slide-${GameState.currentSlide}`);
+                if(currentEl) currentEl.classList.remove('active');
+                
+                GameState.currentSlide++;
+                
+                const nextEl = document.getElementById(`slide-${GameState.currentSlide}`);
+                if(nextEl) nextEl.classList.add('active');
+                
+                updateProgress();
+            }
+        }
+
+        function prevSlide() {
+            if(GameState.currentSlide > 1) {
+                const currentEl = document.getElementById(`slide-${GameState.currentSlide}`);
+                if(currentEl) currentEl.classList.remove('active');
+                
+                GameState.currentSlide--;
+                
+                const prevEl = document.getElementById(`slide-${GameState.currentSlide}`);
+                if(prevEl) prevEl.classList.add('active');
+                
+                updateProgress();
+            }
+        }
+
+        function updateProgress() {
+            document.getElementById('slide-counter').textContent = GameState.currentSlide.toString().padStart(2, '0');
+        }
+
+        function nextSlideDelayed() {
+            setTimeout(nextSlide, 1500);
+        }
+
+        // SIDEBARS
+        function toggleSidebar(id) {
+            const sidebar = document.getElementById(id);
+            const main = document.getElementById('main-container');
+            sidebar.classList.toggle('open');
+            
+            const anyOpen = document.querySelectorAll('.sidebar.open').length > 0;
+            if(anyOpen) {
+                main.classList.add('sidebar-open');
+            } else {
+                main.classList.remove('sidebar-open');
+            }
+        }
+
+        function openDict(word) {
+            const data = VOCAB[word];
+            if(data) {
+                const sidebar = document.getElementById('dict-sidebar');
+                if(!sidebar.classList.contains('open')) toggleSidebar('dict-sidebar');
+                
+                document.getElementById('dict-content').innerHTML = `
+                    <div class="bg-black/60 p-6 rounded-2xl border-l-4 border-l-brand-green shadow-lg mt-4">
+                        <h3 class="font-montserrat text-3xl font-black text-white uppercase mb-2 drop-shadow-md">${word}</h3>
+                        <p class="font-fira text-brand-green mb-4 font-bold tracking-widest">${data.phonetics}</p>
+                        <p class="mb-4 text-lg font-light leading-relaxed"><strong>Def:</strong> ${data.def}</p>
+                        <p class="italic text-text-muted mb-6 border-l-2 border-glass-border pl-4 text-lg">"${data.ctx}"</p>
+                        <div class="bg-brand-green text-black p-4 rounded-xl font-bold shadow-[0_0_15px_rgba(29,185,84,0.3)]">
+                            <i class="fa-solid fa-comment-dots mr-2"></i> Discuss:<br>
+                            <span class="font-medium mt-1 inline-block">${data.q}</span>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // GAMIFICATION CORE
+        function updateHUD() {
+            document.getElementById('xp-display').textContent = Math.floor(GameState.xp);
+        }
+
+        function addXP(amount, element = null) {
+            GameState.xp += amount;
+            if(GameState.xp < 0) GameState.xp = 0;
+            updateHUD();
+
+            if(element && amount > 0) {
+                const rect = element.getBoundingClientRect();
+                const float = document.createElement('div');
+                float.textContent = `+${Math.floor(amount)} XP`;
+                float.className = 'fixed text-white font-black text-3xl pointer-events-none z-[3000] drop-shadow-[0_0_15px_rgba(29,185,84,1)] font-fira';
+                float.style.left = `${rect.left + rect.width/2 - 40}px`;
+                float.style.top = `${rect.top}px`;
+                float.style.animation = 'floatUp 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
+                document.body.appendChild(float);
+                setTimeout(() => float.remove(), 1200);
+            }
+        }
+
+        function triggerPraise() {
+            const praises = ["EXCELLENT!", "BRILLIANT!", "SPOT ON!", "AMAZING!"];
+            const text = praises[Math.floor(Math.random() * praises.length)];
+            
+            const float = document.createElement('div');
+            float.textContent = text;
+            float.className = 'fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white font-montserrat font-black text-7xl pointer-events-none z-[3000] drop-shadow-[0_0_30px_rgba(29,185,84,1)] uppercase';
+            float.style.animation = 'floatUp 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
+            document.body.appendChild(float);
+            setTimeout(() => float.remove(), 1500);
+            addXP(100);
+        }
+
+        function checkAnswer(isCorrect, element, xpVal = 100) {
+            if(isCorrect) {
+                element.classList.add('bg-brand-dark', 'border-brand-green');
+                element.classList.remove('border-glass-border', 'bg-glass-bg');
+                element.style.pointerEvents = 'none';
+                element.style.boxShadow = '0 0 20px rgba(29, 185, 84, 0.5)';
+                addXP(xpVal, element);
+            } else {
+                element.classList.add('shake');
+                setTimeout(() => {
+                    element.classList.remove('shake');
+                }, 500);
+            }
+        }
+
+        function revealHub(element) {
+            const slide = element.closest('.slide');
+            if (slide) {
+                const hub = slide.querySelector('.speaking-hub');
+                if(hub) hub.classList.remove('hidden');
+            }
+        }
+
+        // TIMER LOGIC
+        let timerInterval;
+        let timeLeft = 60;
+        
+        function updateTimerDisplay() {
+            const min = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+            const sec = String(timeLeft % 60).padStart(2, '0');
+            document.getElementById('timer-display').textContent = `${min}:${sec}`;
+        }
+        
+        function startTimer() {
+            if(!timerInterval) {
+                timerInterval = setInterval(() => {
+                    if(timeLeft > 0) {
+                        timeLeft--;
+                        updateTimerDisplay();
+                    } else {
+                        pauseTimer();
+                        document.getElementById('timer-display').classList.add('text-incorrect', 'drop-shadow-[0_0_15px_rgba(226,33,52,0.8)]');
+                    }
+                }, 1000);
+            }
+        }
+        
+        function pauseTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        
+        function resetTimer() {
+            pauseTimer();
+            timeLeft = 60;
+            document.getElementById('timer-display').classList.remove('text-incorrect', 'drop-shadow-[0_0_15px_rgba(226,33,52,0.8)]');
+            updateTimerDisplay();
+        }
+
+        // SPECIFIC MINIGAMES
+
+        // Slide 6: Mystery Boxes
+        function openBox(box, word) {
+            if(box.classList.contains('opened')) return;
+            box.classList.add('opened');
+            const span = box.querySelector('span');
+            span.style.opacity = '1';
+            
+            addXP(50, box);
+            setTimeout(() => {
+                openDict(word);
+            }, 600);
+        }
+
+        // Slide 7: Connect
+        let selectedVocabMatch = null;
+        function selectVocabMatch(btn, type) {
+            if(btn.classList.contains('bg-brand-dark')) return; 
+
+            const container = document.getElementById('vocab-match-container');
+            const sameTypeBtns = container.querySelectorAll(type === 'word' ? '.match-btn-v[data-word]' : '.match-btn-v[data-match]');
+            sameTypeBtns.forEach(b => {
+                if(!b.classList.contains('bg-brand-dark')) b.classList.remove('selected');
+            });
+
+            btn.classList.add('selected');
+
+            if(!selectedVocabMatch) {
+                selectedVocabMatch = { element: btn, type: type, val: btn.dataset.word || btn.dataset.match };
+            } else {
+                if(selectedVocabMatch.type === type) {
+                    selectedVocabMatch = { element: btn, type: type, val: btn.dataset.word || btn.dataset.match };
+                } else {
+                    const currentVal = btn.dataset.word || btn.dataset.match;
+                    if(selectedVocabMatch.val === currentVal) {
+                        btn.classList.replace('selected', 'bg-brand-dark');
+                        btn.classList.add('border-brand-green', 'shadow-[0_0_20px_rgba(29,185,84,0.5)]', 'pointer-events-none');
+                        
+                        selectedVocabMatch.element.classList.replace('selected', 'bg-brand-dark');
+                        selectedVocabMatch.element.classList.add('border-brand-green', 'shadow-[0_0_20px_rgba(29,185,84,0.5)]', 'pointer-events-none');
+                        
+                        addXP(100, btn);
+                        selectedVocabMatch = null;
+                    } else {
+                        btn.classList.remove('selected');
+                        selectedVocabMatch.element.classList.remove('selected');
+                        btn.classList.add('shake');
+                        selectedVocabMatch.element.classList.add('shake');
+                        
+                        setTimeout(() => {
+                            btn.classList.remove('shake');
+                            if(selectedVocabMatch) selectedVocabMatch.element.classList.remove('shake');
+                            selectedVocabMatch = null;
+                        }, 500);
+                    }
+                }
+            }
+        }
+
+        // Slide 8: Data Recovery
+        function verifyDataRecovery(btn) {
+            const c1 = document.getElementById('cloze-1');
+            const c2 = document.getElementById('cloze-2');
+            const c3 = document.getElementById('cloze-3');
+            const c4 = document.getElementById('cloze-4');
+            
+            let correctCount = 0;
+            [c1, c2, c3, c4].forEach(c => {
+                c.classList.remove('text-brand-green', 'text-incorrect');
+                if(c.value === 'correct') {
+                    c.classList.add('text-brand-green');
+                    correctCount++;
+                } else if(c.value === 'wrong') {
+                    c.classList.add('text-incorrect');
+                }
+            });
+
+            if(correctCount === 4) {
+                addXP(200, btn);
+                revealHub(btn);
+                btn.innerHTML = 'Diagnostic Complete <i class="fa-solid fa-check ml-2"></i>';
+                btn.style.pointerEvents = 'none';
+                btn.classList.replace('btn-primary', 'bg-brand-dark');
+            } else {
+                btn.classList.add('shake', 'bg-incorrect');
+                setTimeout(() => btn.classList.remove('shake', 'bg-incorrect'), 500);
+            }
+        }
+
+        // Slide 10: Fact Checker
+        function checkAllFacts() {
+            const correctBtns = document.querySelectorAll('#slide-10 .btn-glass.bg-brand-dark');
+            if(correctBtns.length === 3) {
+                document.getElementById('fact-hub').classList.remove('hidden');
+            }
+        }
+
+        // Slide 14: Sandbox
+        function updateSandbox(word, meaning) {
+            document.getElementById('sandbox-blank').textContent = word;
+            document.getElementById('sandbox-meaning').innerHTML = `<strong>${meaning}</strong>`;
+        }
+
+        // Slide 15: Sorter
+        const sorterWords = [
+            { word: 'hope', type: 'infinitive' },
+            { word: 'mind', type: 'gerund' },
+            { word: 'plan', type: 'infinitive' },
+            { word: 'suggest', type: 'gerund' },
+            { word: 'expect', type: 'infinitive' }
+        ];
+        let currentSortIndex = 0;
+
+        function checkSort(bucketType, bucketEl) {
+            const activeDiv = document.getElementById('active-sort-word');
+            const expectedType = activeDiv.dataset.type;
+
+            if(bucketType === expectedType) {
+                addXP(50, bucketEl);
+                bucketEl.classList.add('bg-white/10', 'border-white');
+                setTimeout(() => bucketEl.classList.remove('bg-white/10', 'border-white'), 300);
+
+                if(currentSortIndex < sorterWords.length) {
+                    activeDiv.classList.remove('pop-anim');
+                    void activeDiv.offsetWidth; 
+                    activeDiv.textContent = sorterWords[currentSortIndex].word;
+                    activeDiv.dataset.type = sorterWords[currentSortIndex].type;
+                    activeDiv.classList.add('pop-anim');
+                    currentSortIndex++;
+                } else {
+                    activeDiv.innerHTML = '<i class="fa-solid fa-check text-brand-green"></i>';
+                    activeDiv.style.borderColor = '#1DB954';
+                    document.getElementById('sorter-hub').classList.remove('hidden');
+                }
+            } else {
+                bucketEl.classList.add('shake');
+                setTimeout(() => bucketEl.classList.remove('shake'), 500);
+            }
+        }
+
+        // Slide 16: Assembly 
+        function moveChip(btn) {
+            const zone = document.getElementById('assembly-zone');
+            const placeholder = zone.querySelector('span');
+            if(placeholder) placeholder.remove();
+
+            btn.setAttribute('onclick', 'returnChip(this)');
+            btn.classList.add('pop-anim');
+            setTimeout(() => btn.classList.remove('pop-anim'), 400);
+            zone.appendChild(btn);
+        }
+        function returnChip(btn) {
+            const container = document.getElementById('assembly-chips');
+            btn.setAttribute('onclick', 'moveChip(this)');
+            container.appendChild(btn);
+            
+            const zone = document.getElementById('assembly-zone');
+            if(zone.children.length === 0) {
+                zone.innerHTML = '<span class="text-text-muted opacity-50 font-inter text-lg">Build sentence here...</span>';
+            }
+        }
+        function verifyAssembly(targetArray, checkBtn) {
+            const currentChips = document.querySelectorAll('#assembly-zone .btn-glass');
+            let isCorrect = true;
+            if(currentChips.length !== targetArray.length) isCorrect = false;
+            else {
+                currentChips.forEach((chip, index) => {
+                    if(chip.textContent !== targetArray[index]) isCorrect = false;
+                });
+            }
+
+            if(isCorrect) {
+                const zone = document.getElementById('assembly-zone');
+                zone.classList.add('success');
+                currentChips.forEach(chip => {
+                    chip.classList.add('bg-brand-dark', 'border-brand-green');
+                    chip.classList.remove('bg-glass-bg');
+                    chip.removeAttribute('onclick');
+                });
+                addXP(200, checkBtn);
+                revealHub(checkBtn);
+                checkBtn.style.pointerEvents = 'none';
+                checkBtn.innerHTML = 'System Verified <i class="fa-solid fa-check ml-2"></i>';
+            } else {
+                document.getElementById('assembly-zone').classList.add('shake');
+                setTimeout(() => document.getElementById('assembly-zone').classList.remove('shake'), 500);
+            }
+        }
+
+        // Slide 17: Error Isolation
+        function checkErrorBlock(isError, btn, fixText = '') {
+            if(isError) {
+                btn.textContent = fixText;
+                btn.classList.add('fixed', 'pop-anim');
+                addXP(150, btn);
+                revealHub(btn);
+            } else {
+                btn.classList.add('shake');
+                setTimeout(() => btn.classList.remove('shake'), 500);
+            }
+        }
+
+        // Slide 18: Rapid Fire
+        let rapidFireCount = 0;
+        function checkRapidFire(isCorrect, btn, row) {
+            if(isCorrect) {
+                const parent = btn.parentElement;
+                parent.querySelectorAll('button').forEach(b => {
+                    b.style.pointerEvents = 'none';
+                    if(b !== btn) b.classList.add('opacity-30');
+                });
+                btn.classList.add('bg-brand-dark', 'border-brand-green');
+                addXP(50, btn);
+                rapidFireCount++;
+                
+                if(rapidFireCount === 3) {
+                    const finalBtn = document.getElementById('rapid-fire-btn');
+                    if(finalBtn) finalBtn.classList.remove('opacity-50', 'pointer-events-none');
+                }
+            } else {
+                btn.classList.add('shake');
+                setTimeout(() => btn.classList.remove('shake'), 500);
+            }
+        }
+
+        // Slide 20: THE SPECTRUM QUIZ DATA & LOGIC
+        const quizData = [
+            {
+                q: "It's your birthday. How do you want to celebrate?",
+                o: [
+                    { text: "A) Massive party with everyone I know.", type: "E" },
+                    { text: "B) Dinner with a few very close friends.", type: "A" },
+                    { text: "C) Do absolutely nothing, just stay home.", type: "I" }
+                ],
+                prompt: "Why do large celebrations feel exhausting or exciting to you?"
+            },
+            {
+                q: "A long holiday weekend is coming. Your ideal plan?",
+                o: [
+                    { text: "A) Travel with a big group of people.", type: "E" },
+                    { text: "B) A healthy mix of going out and staying in.", type: "A" },
+                    { text: "C) Relax at home, order food, watch a series.", type: "I" }
+                ],
+                prompt: "What is the longest you've ever gone without leaving the house?"
+            },
+            {
+                q: "Your phone rings with an unsaved number. You...",
+                o: [
+                    { text: "A) Answer immediately. Might be important!", type: "E" },
+                    { text: "B) Google the number while it rings.", type: "A" },
+                    { text: "C) Stare at it until it stops, then text 'who is this?'", type: "I" }
+                ],
+                prompt: "Do phone calls give you anxiety? Why do people hate calls now?"
+            },
+            {
+                q: "A friend cancels your Friday night plans. You feel...",
+                o: [
+                    { text: "A) Annoyed. I'll just find someone else to go out with.", type: "E" },
+                    { text: "B) Disappointed, but I'll find something to do.", type: "A" },
+                    { text: "C) Secretly relieved. Pyjama time!", type: "I" }
+                ],
+                prompt: "Tell me about a time you made up a fake excuse just to stay home."
+            },
+            {
+                q: "How do you feel about open-plan offices?",
+                o: [
+                    { text: "A) Love the energy and collaboration.", type: "E" },
+                    { text: "B) Okay, as long as I have noise-canceling headphones.", type: "A" },
+                    { text: "C) Hate the noise and constant interruptions.", type: "I" }
+                ],
+                prompt: "How does your work environment directly affect your productivity?"
+            },
+            {
+                q: "You enter an elevator with a neighbor. You...",
+                o: [
+                    { text: "A) Start a friendly chat about their day.", type: "E" },
+                    { text: "B) Smile, say hello, and look at the floor.", type: "A" },
+                    { text: "C) Pray they don't speak to me.", type: "I" }
+                ],
+                prompt: "Is 'small talk' a valuable social skill or a complete waste of time?"
+            },
+            {
+                q: "After a 3-hour corporate networking event, you are...",
+                o: [
+                    { text: "A) Hyped up! I made so many connections.", type: "E" },
+                    { text: "B) Tired, but glad I went.", type: "A" },
+                    { text: "C) Completely drained. I need total silence.", type: "I" }
+                ],
+                prompt: "How exactly do you 'recharge' your battery after being drained?"
+            },
+            {
+                q: "When you have a very tough problem to solve, you...",
+                o: [
+                    { text: "A) Brainstorm out loud with other people.", type: "E" },
+                    { text: "B) Research online, then ask a friend.", type: "A" },
+                    { text: "C) Isolate myself in a quiet room to think deeply.", type: "I" }
+                ],
+                prompt: "Do you agree with the video that introverts are better problem solvers?"
+            },
+            {
+                q: "Your ideal vacation vibe?",
+                o: [
+                    { text: "A) Clubbing in Ibiza or a crowded music festival.", type: "E" },
+                    { text: "B) A guided tour with a mix of activities and free time.", type: "A" },
+                    { text: "C) A quiet cabin in the woods or an empty beach.", type: "I" }
+                ],
+                prompt: "What is the best trip you've ever taken and why?"
+            },
+            {
+                q: "In a group setting with 10 people, you usually...",
+                o: [
+                    { text: "A) Do most of the talking and tell stories.", type: "E" },
+                    { text: "B) Listen, laugh, and occasionally add a comment.", type: "A" },
+                    { text: "C) Find one person to have a deep 1-on-1 conversation with.", type: "I" }
+                ],
+                prompt: "Do you prefer deep, serious conversations or lighthearted group jokes?"
+            }
+        ];
+
+        let currentQuizIndex = 0;
+        let scores = { E: 0, A: 0, I: 0 };
+
+        function renderQuiz() {
+            const q = quizData[currentQuizIndex];
+            document.getElementById('quiz-counter').textContent = `QUESTION ${String(currentQuizIndex + 1).padStart(2, '0')} / 10`;
+            document.getElementById('quiz-progress').style.width = `${((currentQuizIndex + 1) / 10) * 100}%`;
+            
+            const contentDiv = document.getElementById('quiz-content');
+            contentDiv.classList.remove('fade-in');
+            contentDiv.classList.add('fade-out');
+            
+            setTimeout(() => {
+                document.getElementById('quiz-question').textContent = q.q;
+                
+                let optionsHTML = '';
+                q.o.forEach((opt, idx) => {
+                    optionsHTML += `<button class="btn-glass text-left text-xl py-5 px-6 hover:bg-brand-dark" onclick="selectQuizOption('${opt.type}', this)">${opt.text}</button>`;
+                });
+                document.getElementById('quiz-options').innerHTML = optionsHTML;
+                
+                document.getElementById('quiz-discussion-prompt').textContent = q.prompt;
+                document.getElementById('quiz-hub').classList.add('hidden'); 
+                
+                contentDiv.classList.remove('fade-out');
+                contentDiv.classList.add('fade-in');
+            }, 300);
+        }
+
+        function selectQuizOption(type, btn) {
+            scores[type]++;
+            addXP(50);
+            
+            const buttons = document.getElementById('quiz-options').querySelectorAll('button');
+            buttons.forEach(b => {
+                b.style.pointerEvents = 'none';
+                b.classList.remove('hover:bg-brand-dark');
+                if(b !== btn) b.classList.add('opacity-50');
+            });
+            
+            btn.classList.add('bg-brand-dark', 'border-brand-green', 'shadow-[0_0_20px_rgba(29,185,84,0.5)]');
+            
+            const hub = document.getElementById('quiz-hub');
+            hub.classList.remove('hidden');
+            hub.classList.add('fade-in');
+        }
+
+        function nextQuizQuestion() {
+            currentQuizIndex++;
+            if(currentQuizIndex < quizData.length) {
+                renderQuiz();
+            } else {
+                showQuizResult();
+            }
+        }
+
+        function showQuizResult() {
+            document.getElementById('quiz-content').classList.add('hidden');
+            document.getElementById('quiz-hub').classList.add('hidden');
+            document.querySelector('.progress-container')?.classList.add('hidden');
+            
+            const resultDiv = document.getElementById('quiz-result');
+            resultDiv.classList.remove('hidden');
+            resultDiv.classList.add('fade-in');
+
+            let maxType = 'I';
+            if(scores.E > scores.I && scores.E > scores.A) maxType = 'E';
+            if(scores.A > scores.E && scores.A > scores.I) maxType = 'A';
+            if(scores.I === scores.E) maxType = 'A'; 
+
+            const title = document.getElementById('result-title');
+            const desc = document.getElementById('result-desc');
+            const icon = document.getElementById('result-icon');
+
+            if(maxType === 'I') {
+                title.textContent = "The Introvert";
+                title.className = "font-montserrat text-6xl font-black mb-6 uppercase text-blue-400";
+                icon.className = "fa-solid fa-battery-quarter text-7xl text-blue-400 mb-6 drop-shadow-[0_0_20px_rgba(96,165,250,0.8)]";
+                desc.textContent = "Your battery drains quickly in loud social settings. Home is your ultimate refuge, and you protect your peace above all else.";
+            } else if(maxType === 'E') {
+                title.textContent = "The Extrovert";
+                title.className = "font-montserrat text-6xl font-black mb-6 uppercase text-yellow-400";
+                icon.className = "fa-solid fa-bolt text-7xl text-yellow-400 mb-6 drop-shadow-[0_0_20px_rgba(250,204,21,0.8)]";
+                desc.textContent = "You thrive on chaos and connection! Other people charge your battery, and a quiet Friday night sounds like a punishment.";
+            } else {
+                title.textContent = "The Ambivert";
+                title.className = "font-montserrat text-6xl font-black mb-6 uppercase text-brand-green";
+                icon.className = "fa-solid fa-scale-balanced text-7xl text-brand-green mb-6 drop-shadow-[0_0_20px_rgba(29,185,84,0.8)]";
+                desc.textContent = "You are perfectly balanced. You love a good party, but you also deeply value your alone time. You adapt to whatever the situation needs.";
+            }
+        }
+
+        // Slide 25: Phone UI
+        function checkPhone(isCorrect, btn) {
+            const chatBox = document.getElementById('chat-box');
+            
+            const newBubble = document.createElement('div');
+            newBubble.className = 'bg-brand-green text-black p-4 rounded-2xl rounded-br-sm max-w-[85%] self-end mb-4 shadow-[0_0_15px_rgba(29,185,84,0.4)] text-lg font-bold pop-anim';
+            newBubble.textContent = btn.textContent;
+            
+            chatBox.appendChild(newBubble);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            if(isCorrect) {
+                addXP(100, chatBox);
+                setTimeout(() => nextSlideDelayed(), 1000);
+            } else {
+                newBubble.classList.replace('bg-brand-green', 'bg-incorrect');
+                newBubble.classList.add('text-white');
+                newBubble.classList.remove('text-black');
+                newBubble.style.boxShadow = 'none';
+                setTimeout(() => {
+                    newBubble.remove();
+                }, 1000);
+            }
+        }
+
+        // Slide 28: Mission Complete
+        function completeMission() {
+            document.getElementById('final-name').textContent = GameState.name;
+            document.getElementById('final-xp').textContent = Math.floor(GameState.xp);
+            nextSlide();
+        }
+
+        // Initialize display
+        updateHUD();
+        updateProgress();
+        renderQuiz();
+
+    </script>
+</body>
+</html>
